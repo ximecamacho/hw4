@@ -247,6 +247,8 @@ protected:
     virtual void nodeSwap( Node<Key,Value>* n1, Node<Key,Value>* n2) ;
 
     // Add helper functions here
+    void clearHelper(Node<Key, Value>* current);
+    int balanceHelper(Node<Key, Value>* current,int& h, int& p );
 
 
 protected:
@@ -267,6 +269,7 @@ template<class Key, class Value>
 BinarySearchTree<Key, Value>::iterator::iterator(Node<Key,Value> *ptr)
 {
     // TODO
+    current_= ptr;
 }
 
 /**
@@ -276,6 +279,7 @@ template<class Key, class Value>
 BinarySearchTree<Key, Value>::iterator::iterator() 
 {
     // TODO
+    current_=NULL;
 
 }
 
@@ -309,6 +313,27 @@ BinarySearchTree<Key, Value>::iterator::operator==(
     const BinarySearchTree<Key, Value>::iterator& rhs) const
 {
     // TODO
+    if(((&rhs)->current_) != NULL){
+      Key currentKey= (&current_->getItem())->first;
+      Value currentValue= (&current_->getItem())->second;
+      Key rhsKey = ((&rhs)->current_)->getKey();
+      Value rhsValue= ((&rhs)->current_)->getValue();
+      if((currentKey == rhsKey) && (currentValue == rhsValue)){
+        return true;
+      }
+    }
+    else{
+      if (current_ == NULL){
+        return true;
+      }
+    }
+    
+    
+   
+    
+    return false;
+    
+    
 }
 
 /**
@@ -321,7 +346,24 @@ BinarySearchTree<Key, Value>::iterator::operator!=(
     const BinarySearchTree<Key, Value>::iterator& rhs) const
 {
     // TODO
-
+    
+    if(((&rhs)->current_) != NULL){
+      Key currentKey= (&current_->getItem())->first;
+      Value currentValue= (&current_->getItem())->second;
+      Key rhsKey = ((&rhs)->current_)->getKey();
+      Value rhsValue= ((&rhs)->current_)->getValue();
+      if((currentKey != rhsKey) && (currentValue != rhsValue)){
+        return true;
+      }
+    }
+    else{
+      if (current_ != NULL){
+        return true;
+      }
+    }
+    
+    return false;
+    
 }
 
 
@@ -333,6 +375,15 @@ typename BinarySearchTree<Key, Value>::iterator&
 BinarySearchTree<Key, Value>::iterator::operator++()
 {
     // TODO
+    
+    if(((this)->current_->getLeft()) == NULL){
+      (this)->current_=(this)->current_->getLeft();
+
+    }
+    else{
+      (this)->current_=(this)->current_->getLeft();
+    }
+    return *this;
 
 }
 
@@ -356,12 +407,17 @@ template<class Key, class Value>
 BinarySearchTree<Key, Value>::BinarySearchTree() 
 {
     // TODO
+    root_ = NULL;
 }
 
 template<typename Key, typename Value>
 BinarySearchTree<Key, Value>::~BinarySearchTree()
 {
     // TODO
+    
+    
+      clear();
+
 
 }
 
@@ -445,6 +501,51 @@ template<class Key, class Value>
 void BinarySearchTree<Key, Value>::insert(const std::pair<const Key, Value> &keyValuePair)
 {
     // TODO
+
+    //bst is empty
+    if(this->root_ == NULL){
+    
+      root_ = new Node<Key, Value> ((&keyValuePair)->first, (&keyValuePair)->second, NULL);
+      return;
+    }
+
+    //bst is NOT empty 
+    Node<Key, Value> * spotToPlace = root_;
+    Key spotKey = spotToPlace->getKey();
+    //given key never changes
+    Key givenKey = (&keyValuePair)->first;
+    Value givenValue = (&keyValuePair)->second;
+    //while we have not found an empty spot
+    while(spotToPlace != NULL){
+      spotKey = spotToPlace->getKey();
+      if(spotKey == givenKey){
+        spotToPlace->setValue(givenValue);
+        return;
+      }
+      if(givenKey < spotKey){
+        if((spotToPlace->getLeft()) == NULL){
+         spotToPlace->setLeft(new Node<Key, Value> ((&keyValuePair)->first, (&keyValuePair)->second, spotToPlace));
+           
+          return;
+        }
+        spotToPlace = spotToPlace->getLeft();
+
+      }
+      else if(givenKey > spotKey){
+        if((spotToPlace->getRight()) == NULL){
+         spotToPlace->setRight(new Node<Key, Value> ((&keyValuePair)->first, (&keyValuePair)->second, spotToPlace));
+          return;
+        }
+        spotToPlace = spotToPlace->getRight();
+
+      }
+    }
+
+   
+    
+    return;
+   
+
 }
 
 
@@ -457,6 +558,50 @@ template<typename Key, typename Value>
 void BinarySearchTree<Key, Value>::remove(const Key& key)
 {
     // TODO
+    Node<Key, Value>* nodeOfKey = internalFind(key);
+    if(nodeOfKey == NULL){
+      nodeOfKey=NULL;
+      delete nodeOfKey;
+      return;
+    }
+    
+    while(nodeOfKey != NULL){
+      //two children
+      if ((nodeOfKey->getLeft()!=NULL) && (nodeOfKey->getRight()!=NULL)){
+        nodeSwap(nodeOfKey, predecessor(nodeOfKey));
+      }
+    //no child
+    if((nodeOfKey->getLeft() == NULL) && (nodeOfKey->getRight() == NULL)){
+      nodeOfKey = NULL;
+      delete nodeOfKey;
+      return;
+    }
+    //one child
+    else if ((nodeOfKey->getLeft()) == NULL){
+      nodeSwap(nodeOfKey, nodeOfKey->getLeft());
+      nodeOfKey=NULL;
+      delete nodeOfKey;
+      return;
+
+    }
+    else if ((nodeOfKey->getRight())== NULL){
+      nodeSwap(nodeOfKey, nodeOfKey->getRight());
+      nodeOfKey=NULL;
+      delete nodeOfKey;
+      return;
+    } 
+    else{
+      nodeOfKey=NULL;
+      delete nodeOfKey;
+      return;
+    }  
+    
+    }
+
+
+    return;
+    
+    
 }
 
 
@@ -466,6 +611,31 @@ Node<Key, Value>*
 BinarySearchTree<Key, Value>::predecessor(Node<Key, Value>* current)
 {
     // TODO
+    //base case
+    Node<Key, Value>* temp = current;
+    //left child exists
+    if((current->getLeft()) != NULL){
+      temp = current->getLeft();
+      while (temp != NULL){
+        temp = temp->getRight();
+      }
+      return temp;
+    }
+    //left does not exist
+    else{
+      while(temp != NULL){
+        if(((temp->getParent())->getRight())== temp){
+          return temp;
+        }
+        else if(temp->getParent() == NULL){
+            return NULL;
+        }
+
+        temp = temp->getParent();
+      }
+    }
+    return current;
+    
 }
 
 
@@ -477,7 +647,27 @@ template<typename Key, typename Value>
 void BinarySearchTree<Key, Value>::clear()
 {
     // TODO
+    clearHelper(root_);
 }
+
+//helperfunc
+template<typename Key, typename Value>
+void BinarySearchTree<Key, Value>::clearHelper(Node<Key, Value>* current)
+{
+    // TODO
+    if(current == NULL){
+       delete current;
+        return;
+    }
+
+    clearHelper(current->getLeft());
+    clearHelper(current->getRight());
+    current = NULL;
+    delete current;
+    
+
+}
+
 
 
 /**
@@ -488,6 +678,17 @@ Node<Key, Value>*
 BinarySearchTree<Key, Value>::getSmallestNode() const
 {
     // TODO
+    Node<Key,Value>* curr = root_;
+
+    if (curr == NULL){
+      return NULL;
+    }
+    while ((curr->getLeft()) != NULL){
+        curr = curr->getLeft();
+
+    }
+   
+    return curr;
 }
 
 /**
@@ -499,6 +700,24 @@ template<typename Key, typename Value>
 Node<Key, Value>* BinarySearchTree<Key, Value>::internalFind(const Key& key) const
 {
     // TODO
+    Node<Key,Value>* curr = root_;
+
+    
+    while (curr != NULL){
+      Key currKey = curr->getKey();
+      if(key == currKey){
+        return curr;
+      }
+      else if (key > currKey){
+        curr = curr->getRight();
+      }
+      else if(key < currKey){
+        curr = curr->getLeft();
+      }   
+    }
+    return NULL;
+
+    
 }
 
 /**
@@ -508,6 +727,54 @@ template<typename Key, typename Value>
 bool BinarySearchTree<Key, Value>::isBalanced() const
 {
     // TODO
+    //int height = 0;
+    //int prev = 0;
+
+    if(root_ == NULL){
+        return true;
+    }
+
+    if((root_->getLeft() == NULL) && (root_->getRight() == NULL)){
+        return true;
+    }
+
+    /*int toReturn = balanceHelper(root_, height, prev);
+    if(toReturn < 1){
+        return true;
+    }
+    else{
+        return false;
+    }*/
+    return false;
+}
+
+template<typename Key, typename Value>
+int BinarySearchTree<Key, Value>::balanceHelper(Node<Key, Value>* current, int& h, int& p){
+    int temp = h;
+    if(current == NULL){
+        if(p == 0){
+            p = temp;
+            h--;
+            return h;
+        }
+        else if(p != temp){
+            h--;
+            if(h == 1){
+                h--;
+            }
+            return h;
+        }
+        if(h == 1){
+            h--;
+            return h;
+        }
+        return h;
+    }
+    h++;
+    balanceHelper(current.getLeft(), h, p);
+    balanceHelper(current.getRight(), h, p);
+
+
 }
 
 
